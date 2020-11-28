@@ -63,13 +63,28 @@ async function buildLargeWidget(moz) {
   return widget
 }
 
-const SEPIA = new Color("#5E2612")
-const TURQUOISE = new Color("#30d5c8")
-const PURLE = new Color("#632b6c")
+function NewLinearGradient(lightModeColors, darkModeColors) {
+  grad = new LinearGradient()
+
+  if (config.runsInWidget) {
+    // detecting light/dark modes is NOT supported in widgets.
+    // https://docs.scriptable.app/device/#isusingdarkappearance
+    grad.colors = [
+      Color.dynamic(lightModeColors[0], darkModeColors[0]),
+      Color.dynamic(lightModeColors[1], darkModeColors[1])
+    ]
+  } else {
+    grad.colors = Device.isUsingDarkAppearance() ? darkModeColors : lightModeColors
+  }
+  grad.locations = [0, 1]
+
+  return grad
+}
+
+const PEACH = new Color("#f09f9c")
+const LIGHT_PURPLE = new Color("#c76b98")
+const PURPLE = new Color("#632b6c")
 const DARK_PURPLE = new Color("#270f36")
-bgGrad = new LinearGradient()
-bgGrad.colors = [DARK_PURPLE, PURLE]
-bgGrad.locations = [0, 1]
 
 moz = {
   quote: {
@@ -92,6 +107,7 @@ if (config.widgetFamily === "large" || config.widgetFamily == null) {
   widget = await buildSmallWidget(moz)
 }
 
+bgGrad = NewLinearGradient([LIGHT_PURPLE, PEACH], [DARK_PURPLE, PURPLE])
 widget.backgroundGradient = bgGrad
 
 Script.setWidget(widget)
