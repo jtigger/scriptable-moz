@@ -86,18 +86,35 @@ const LIGHT_PURPLE = new Color("#c76b98")
 const PURPLE = new Color("#632b6c")
 const DARK_PURPLE = new Color("#270f36")
 
-moz = {
+mozs = [
+{
   quote: {
-    text: "Knowledge is learning something new every day.\nWisdom is letting go of something every day.",
+    text: "Life is a journey. Time is a river. The door is ajar.",
     author: {
       name: "Jim Butcher",
       bioURL: "http://en.wikipedia.org/wiki/Jim_Butcher"
     }
   },
   art: {
-    sourceURL: "2014-12-29.jpg" 
+    sourceURL: "yin-yang.png" 
   }
-}
+},
+{
+  quote: {
+    text: "Knowledge is learning something new every day.\nWisdom is letting go of something every day.",
+    author: {
+      name: "Zen Proverb",
+      bioURL: "http://en.wikipedia.org/wiki/Jim_Butcher"
+    }
+  },
+  art: {
+    sourceURL: "let-go-or-be-dragged.jpg" 
+  }
+},
+]
+
+
+moz = mozs[0]
 
 if (config.widgetFamily === "large" || config.widgetFamily == null) {
   widget = await buildLargeWidget(moz)
