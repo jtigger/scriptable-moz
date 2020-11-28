@@ -33,14 +33,21 @@ async function buildMediumWidget(moz) {
   widget = new ListWidget()
   content = widget.addStack()
   quoteColumn = content.addStack()
-  quoteText = quoteColumn.addText(asQuote(moz.quote.text))
+  line1Row = quoteColumn.addStack()
+  quoteText1 = line1Row.addText('"' + "Knowledge is learning something new every day.")
+  line1Row.addSpacer()
+
+  line2Row = quoteColumn.addStack()
+  line2Row.addSpacer()
+  quoteText2 = line2Row.addText("Wisdom is letting go of something every day." + '"')
   authorRow = quoteColumn.addStack()
   authorLeftPad = authorRow.addSpacer()
   authorText = authorRow.addText(attributeTo(moz.quote.author.name))
 
   content.centerAlignContent()
   quoteColumn.layoutVertically()
-  quoteText.centerAlignText()
+  quoteText1.leftAlignText()
+  quoteText2.rightAlignText()
 
   return widget
 }
@@ -80,7 +87,7 @@ moz = {
     }
   },
   art: {
-    sourceURL: "2014-12-29.jpg" 
+    sourceURL: "let-go-or-be-dragged.jpg" 
   }
 }
 
