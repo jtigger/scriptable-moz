@@ -167,10 +167,11 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "yin-yang.png" 
+        sourceURL: "yin-yang.png",
+        description: "A simple, black and white yin-yang."
       },
       explore: {
-        prompt: "Watch for an intensity"
+        prompt: "Watch for an intense reaction, today; what makes it so certain?"
       }
     },
     {
@@ -183,10 +184,11 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "let-go-or-be-dragged.jpg" 
+        sourceURL: "let-go-or-be-dragged.jpg",
+        description: "Black-and-white photo of a hot-air balloon near the ground, careening forward, basket leading. Dangling behind it, a man dangling by a rope, is nearly scraping the ground."
       },
       explore: {
-        prompt: "Pick something you’re hanging on to; ask the most mature version of yourself how to truly let it go."
+        prompt: "Pick a little belief you take as a given: what would it be like for the opposite to be true?"
       }
     },
     {
@@ -199,7 +201,8 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "rube_napkin.png" 
+        sourceURL: "rube_napkin.png",
+        description: "A cartoon of a man sipping a bowl of soup with a mechanical rube-goldberg device mounted to his head. The devices features a spoon, a cracker, a bird, a bucket, a rocket, a hook, a clock, and finally a napkin that wipes his face."
       },
       explore: {
         prompt: "Finish this sentence: \"I will be happy when _____.\""
@@ -215,10 +218,11 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "dalai-lama-laughing.jpg" 
+        sourceURL: "dalai-lama-laughing.jpg",
+        description: "A full color photo of the 11th Dalai Lama overcome with laughter with a friend."
       },
       explore: {
-        prompt: "Consider your genuine and full presence a present."
+        prompt: "What does it look like to fully accept what has happened? ... to fully accept what will happen?"
       }
     },
     {
@@ -231,10 +235,11 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "john-wooden.jpg" 
+        sourceURL: "john-wooden.jpg",
+        description: "Headshot of famous American college basketball coach, John Wooden. He's silvered with Malcolm X-styled spectacles, relaxed yet fully engaged with the action on the court."
       },
       explore: {
-        prompt: "Today, try for a perfect day."
+        prompt: "What do _you_ get out of giving with absolutely no strings attached?"
       }
     },
     {
@@ -247,10 +252,11 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "looking-down-the-road.jpg" 
+        sourceURL: "looking-down-the-road.jpg",
+        description: "Full color photo of a desert highway in big sky country with a child, arms akimbo, with her back towards us, looking down the road."
       },
       explore: {
-        prompt: "Today, enjoy the sweetness of possibility."
+        prompt: "Find a way to make _their_ idea work. Bonus points if it's different than how you'd do it."
       }
     },
     {
@@ -263,12 +269,47 @@ mozs = {
         }
       },
       art: {
-        sourceURL: "monks-on-coasters.jpg" 
+        sourceURL: "monks-on-coasters.jpg",
+        description: "Full color photo of a roller coaster full of buddhist monks, in saffron robes, arms up, all screaming with delight."
       },
       explore: {
-        prompt: "### Explore: What would you lose and what would you gain if you allowed for things to not go “your way?”"
+        prompt: "What does expecting life to be down feel like?"
       }
     },
+    {
+      id: 7,
+      quote: {
+        text: "Security is mostly a superstition. It does not exist in nature... Avoiding danger is no safer in the long run than outright exposure. Life is either a daring adventure, or nothing.",
+        author: {
+          name: "Helen Keller",
+          bioURL: "http://en.wikipedia.org/wiki/Helen_Keller"
+        }
+      },
+      art: {
+        sourceURL: "your-comfort-zone.jpg",
+        description: "Line drawing of two circles near each other. The larger one, on the left, reads, \"Where the magic happens\"; the smaller one on the right has an arrow pointing at its center and on the tail end of the arrow, \"Your comfort zone.\""
+      },
+      explore: {
+        prompt: "How do you find security?"
+      }
+    },
+    {
+      id: 8,
+      quote: {
+        text: "Common sense is the collection of prejudices acquired by age eighteen.",
+        author: {
+          name: "Albert Einstein",
+          bioURL: "http://einstein.biz"
+        }
+      },
+      art: {
+        sourceURL: "einstein-tongue-out.jpg",
+        description: "Black-and-white photo of the famous scientist, with the infamous wide-eyed with tongue fully stuck out-and-down look."
+      },
+      explore: {
+        prompt: "What's an example of something you consider \"common sense?\" How do you know it is true?"
+      }
+    }
   ],
   get: function(id) {
     return this.data[id]
