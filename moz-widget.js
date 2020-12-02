@@ -3,16 +3,10 @@
 // icon-color: purple; icon-glyph: magic;
 //
 
-const deepCopy = (obj) => {
+
+// deepCopy clones `obj` (via JSON serialization/deserialization)
+function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj))
-}
-
-function asQuote(text) {
-  return '"' + text + '"'
-}
-
-function attributeTo(name) {
-  return "— " + name
 }
 
 // imageFor loads and returns an Image instance of the image data pointed to by `url`.
@@ -24,79 +18,12 @@ async function imageFor(url) {
   return fileMgr.readImage(path)
 }
 
-async function buildSmallWidget(moz) {
-  widget = new ListWidget()
-  content = widget.addStack()
-  artImage = content.addImage(await imageFor(moz.art.sourceURL))
-
-  content.centerAlignContent()
-
-  return widget
-}
-
-async function buildMediumWidget(moz) {
-  widget = new ListWidget()
-  content = widget.addStack()
-  quoteColumn = content.addStack()
-  quoteColumn.addSpacer()
-  quoteText = quoteColumn.addText(asQuote(moz.quote.text))
-  quoteColumn.addSpacer()
-  authorRow = quoteColumn.addStack()
-  authorLeftPad = authorRow.addSpacer()
-  authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-
-  content.centerAlignContent()
-  quoteColumn.layoutVertically()
-  quoteText.centerAlignText()
-
-  return widget
-}
-
-async function buildLargeWidget(moz) {
-  widget = new ListWidget()
-  content = widget.addStack()
-  quoteColumn = content.addStack()
-  quoteText = quoteColumn.addText(asQuote(moz.quote.text))
-  quoteColumn.addSpacer(18)
-  authorRow = quoteColumn.addStack()
-  authorLeftPad = authorRow.addSpacer()
-  authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-  gutter = content.addSpacer(18)
-  artImage = content.addImage(await imageFor(moz.art.sourceURL))
-
-  content.centerAlignContent()
-  quoteColumn.layoutVertically()
-  quoteText.centerAlignText()
-
-  return widget
-}
-
-function NewLinearGradient(lightModeColors, darkModeColors) {
-  grad = new LinearGradient()
-
-  if (config.runsInWidget) {
-    // detecting light/dark modes is NOT supported in widgets.
-    // https://docs.scriptable.app/device/#isusingdarkappearance
-    grad.colors = [
-      Color.dynamic(lightModeColors[0], darkModeColors[0]),
-      Color.dynamic(lightModeColors[1], darkModeColors[1])
-    ]
-  } else {
-    grad.colors = Device.isUsingDarkAppearance() ? darkModeColors : lightModeColors
-  }
-  grad.locations = [0, 1]
-
-  return grad
-}
-
-const PEACH = new Color("#f09f9c")
-const LIGHT_PURPLE = new Color("#c76b98")
-const PURPLE = new Color("#632b6c")
-const DARK_PURPLE = new Color("#270f36")
-
-function State() {
+// State contains persisted state of the MoZ app.
+//   stateTTL (optional) = the minimum amount of time (in minutes) since 
+//     latest refresh before considering state as "stale".
+function State(stateTTL) {
   let _state
-  const STATE_TTL = 20 * 1000  // in ms
+  stateTTL = ((stateTTL === undefined) ? 0.5 : stateTTL) * 60 * 1000  // convert to milliseconds 
 
   function init() {
     if (!fileMgr.fileExists(mozHomeDir)) {
@@ -108,8 +35,6 @@ function State() {
     if (!fileMgr.fileExists(mozStateDir)) {
       fileMgr.createDirectory(mozStateDir)
     }
-  }
-  function load() {
     if (fileMgr.fileExists(mozStateFile)) {
       prevState = fileMgr.readString(mozStateFile)
       // TODO: validate
@@ -126,19 +51,20 @@ function State() {
   function isStale() {
     if (fileMgr.fileExists(mozStateFile)) {
       sinceLastMod = new Date().getTime() - fileMgr.modificationDate(mozStateFile).getTime()
-      return sinceLastMod > STATE_TTL 
+      return sinceLastMod > stateTTL 
     }
     return true
   }
-  function save(stateUpdate) {
-    init()
+  function setNextId(id) {
     if (!isStale()) {
       return false
     }
+    save({latestMozId: id})
+  }
+  function save(stateUpdate) {
     // TODO: validate
     _state = Object.assign(_state, stateUpdate)
     fileMgr.writeString(mozStateFile, JSON.stringify(_state))
-    load()
     return true
   }
   const fileMgr = FileManager.iCloud()
@@ -147,16 +73,17 @@ function State() {
   const mozStateDir = fileMgr.joinPath(mozHomeDir, "state")
   const mozStateFile = fileMgr.joinPath(mozStateDir, "current.json")
 
-  load()
+  init()
   return {
     get: get,
     isStale: isStale,
-    save: save
+    setNextId: setNextId
   }
 }
 
-mozs = {
-  data: [
+// InMemoryMozStore provides a preloaded MozStore all present in memory.
+function InMemoryMozStore() {
+  let data = [
     {
       id: 0,
       quote: {
@@ -310,32 +237,133 @@ mozs = {
         prompt: "What's an example of something you consider \"common sense?\" How do you know it is true?"
       }
     }
-  ],
-  get: function(id) {
-    return this.data[id]
-  },
-  nextId: function(id) {
-    return (id + 1) % this.data.length
+  ]
+
+  return {
+    // get returns the full MoZ object identified by `id`
+    get: function(id) {
+      return deepCopy(data[id])
+    },
+    // nextId returns the id of the MoZ that follows `id` 
+    //   the "next id" of the last MoZ is the first MoZ
+    nextId: function(id) {
+      return (id + 1) % data.length
+    }
   }
 }
 
-state = State()
-moz = mozs.get(state.get().latestMozId)
+function App(state, store) {
+  const PEACH = new Color("#f09f9c")
+  const LIGHT_PURPLE = new Color("#c76b98")
+  const PURPLE = new Color("#632b6c")
+  const DARK_PURPLE = new Color("#270f36")
 
-if (config.widgetFamily === "large" || config.widgetFamily == null) {
-  widget = await buildLargeWidget(moz)
-} else if (config.widgetFamily === "medium") {
-  widget = await buildMediumWidget(moz)
-} else if (config.widgetFamily === "small") {
-  widget = await buildSmallWidget(moz)
+  function asQuote(text) {
+    return '"' + text + '"'
+  }
+
+  function attributeTo(name) {
+    return "— " + name
+  }
+
+  async function buildSmallWidget(moz) {
+    widget = new ListWidget()
+    content = widget.addStack()
+    artImage = content.addImage(await imageFor(moz.art.sourceURL))
+
+    content.centerAlignContent()
+
+    return widget
+  }
+
+  async function buildMediumWidget(moz) {
+    widget = new ListWidget()
+    content = widget.addStack()
+    quoteColumn = content.addStack()
+    quoteColumn.addSpacer()
+    quoteText = quoteColumn.addText(asQuote(moz.quote.text))
+    quoteColumn.addSpacer()
+    authorRow = quoteColumn.addStack()
+    authorLeftPad = authorRow.addSpacer()
+    authorText = authorRow.addText(attributeTo(moz.quote.author.name))
+
+    content.centerAlignContent()
+    quoteColumn.layoutVertically()
+    quoteText.centerAlignText()
+
+    return widget
+  }
+
+  async function buildLargeWidget(moz) {
+    widget = new ListWidget()
+    content = widget.addStack()
+    quoteColumn = content.addStack()
+    quoteText = quoteColumn.addText(asQuote(moz.quote.text))
+    quoteColumn.addSpacer(18)
+    authorRow = quoteColumn.addStack()
+    authorLeftPad = authorRow.addSpacer()
+    authorText = authorRow.addText(attributeTo(moz.quote.author.name))
+    gutter = content.addSpacer(18)
+    artImage = content.addImage(await imageFor(moz.art.sourceURL))
+
+    content.centerAlignContent()
+    quoteColumn.layoutVertically()
+    quoteText.centerAlignText()
+
+    return widget
+  }
+
+  function NewLinearGradient(lightModeColors, darkModeColors) {
+    grad = new LinearGradient()
+
+    if (config.runsInWidget) {
+      // detecting light/dark modes is NOT supported in widgets.
+      // https://docs.scriptable.app/device/#isusingdarkappearance
+      grad.colors = [
+        Color.dynamic(lightModeColors[0], darkModeColors[0]),
+        Color.dynamic(lightModeColors[1], darkModeColors[1])
+      ]
+    } else {
+      grad.colors = Device.isUsingDarkAppearance() ? darkModeColors : lightModeColors
+    }
+    grad.locations = [0, 1]
+
+    return grad
+  }
+
+  // buildWidget constructs the layout appropriate for the current widget family
+  async function buildWidget(moz) {
+    if (config.widgetFamily === "large" || config.widgetFamily == null) {
+      widget = await buildLargeWidget(moz)
+    } else if (config.widgetFamily === "medium") {
+      widget = await buildMediumWidget(moz)
+    } else if (config.widgetFamily === "small") {
+      widget = await buildSmallWidget(moz)
+    }
+    return widget
+  }
+
+  async function buildMozWidget() {
+    mozId = state.get().latestMozId
+    state.setNextId(store.nextId(mozId))
+
+    moz = store.get(mozId)
+    widget = await buildWidget(moz)
+    widget.backgroundGradient = NewLinearGradient([LIGHT_PURPLE, PEACH], [DARK_PURPLE, PURPLE])
+
+    return widget
+  }
+  return { buildMozWidget: buildMozWidget }
 }
 
-bgGrad = NewLinearGradient([LIGHT_PURPLE, PEACH], [DARK_PURPLE, PURPLE])
-widget.backgroundGradient = bgGrad
+// initialize dependencies
+const aDay = 60 * 24
+state = State(aDay)
+store = InMemoryMozStore()
+
+widget = await App(state, store).buildMozWidget()
 
 Script.setWidget(widget)
 widget.presentLarge()
-
-state.save({latestMozId: mozs.nextId(state.get().latestMozId)})
 
 Script.complete()
