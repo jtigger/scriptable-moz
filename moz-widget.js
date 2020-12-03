@@ -104,7 +104,7 @@ function InMemoryMozStore() {
     {
       id: 1,
       quote: {
-        text: "Knowledge is learning something new every day.\nWisdom is letting go of something every day.",
+        text: "Knowledge is learning something new every day. Wisdom is letting go of something every day.",
         author: {
           name: "Zen Proverb",
           bioURL: "http://en.wikipedia.org/wiki/Jim_Butcher"
@@ -352,37 +352,49 @@ function App(state, store) {
 
   async function buildMediumWidget(moz) {
     widget = new ListWidget()
-    content = widget.addStack()
-    quoteColumn = content.addStack()
-    quoteColumn.addSpacer()
-    quoteText = quoteColumn.addText(asQuote(moz.quote.text))
-    quoteColumn.addSpacer()
-    authorRow = quoteColumn.addStack()
+
+    widget.addSpacer()
+
+    quoteRow = widget.addStack()
+    quoteRow.addSpacer()
+    quoteText = quoteRow.addText(asQuote(moz.quote.text))
+    quoteRow.addSpacer()
+    quoteText.centerAlignText()
+    quoteText.font = new Font("Noteworthy", 16)
+
+    widget.addSpacer()
+
+    authorRow = widget.addStack()
     authorLeftPad = authorRow.addSpacer()
     authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-
-    content.centerAlignContent()
-    quoteColumn.layoutVertically()
-    quoteText.centerAlignText()
+    authorText.font = new Font("Zapfino", 10)
 
     return widget
   }
 
   async function buildLargeWidget(moz) {
     widget = new ListWidget()
-    content = widget.addStack()
-    quoteColumn = content.addStack()
-    quoteText = quoteColumn.addText(asQuote(moz.quote.text))
-    quoteColumn.addSpacer(18)
-    authorRow = quoteColumn.addStack()
-    authorLeftPad = authorRow.addSpacer()
-    authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-    gutter = content.addSpacer(18)
-    artImage = content.addImage(await imageFor(moz.art.sourceURL))
 
-    content.centerAlignContent()
-    quoteColumn.layoutVertically()
+    artRow = widget.addStack()
+    artRow.addSpacer()
+    artImage = artRow.addImage(await imageFor(moz.art.sourceURL))
+    artRow.addSpacer()
+
+    widget.addSpacer(8)
+
+    quoteRow = widget.addStack()
+    quoteRow.addSpacer()
+    quoteText = quoteRow.addText(asQuote(moz.quote.text))
+    quoteRow.addSpacer()
     quoteText.centerAlignText()
+    quoteText.font = new Font("Noteworthy", 18)
+
+    widget.addSpacer(4)
+
+    authorRow = widget.addStack()
+    authorRow.addSpacer()
+    authorText = authorRow.addText(attributeTo(moz.quote.author.name))
+    authorText.font = new Font("Zapfino", 10)
 
     return widget
   }
@@ -430,7 +442,6 @@ function App(state, store) {
   return { buildMozWidget: buildMozWidget }
 }
 
-// initialize dependencies
 state = State(10)
 store = InMemoryMozStore()
 
