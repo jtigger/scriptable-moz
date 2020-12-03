@@ -236,7 +236,81 @@ function InMemoryMozStore() {
       explore: {
         prompt: "What's an example of something you consider \"common sense?\" How do you know it is true?"
       }
-    }
+    },
+    {
+      id: 9,
+      quote: {
+        text: "If they can get you asking the wrong questions, they don't have to worry about answers.",
+        author: {
+          name: "Thomas Pynchon",
+          bioURL: "http://en.wikipedia.org/wiki/Thomas_Pynchon"
+        }
+      },
+      art: {
+        sourceURL: "pynchon-simpsons.jpg",
+        description: "A frame from a The Simpson's show depicting Thomas Pynchon as a figure with a brown bag over his head."
+      },
+      explore: {
+        prompt: "When you have a moment alone, what kinds of questions are you asking yourself?"
+      }
+    },
+    {
+      id: 10,
+      quote: {
+        text: "Muddy water, let stand - becomes clear.",
+        author: {
+          name: "Lao Tsu",
+          bioURL: "http://www.chebucto.ns.ca/Philosophy/Taichi/lao.html"
+        }
+      },
+      art: {
+        sourceURL: "yin-yang.png",
+        description: "A simple, black and white yin-yang."
+      },
+      explore: {
+        prompt: "If the mind were like water, what could you do to “let stand?”"
+      }
+    },
+    {
+      id: 11,
+      quote: {
+        text: "Those only are happy who have their minds fixed on some object other than their own happiness… aiming thus at something else, they find happiness by the way.",
+        author: {
+          name: "John Stuart Mill",
+          bioURL: "http://en.wikipedia.org/wiki/John_Stuart_Mill"
+        }
+      },
+      art: {
+        sourceURL: "reflective-spheres.jpg",
+        description: "Full color photograph of a dozen polished spheres, reflecting each other."
+      },
+      explore: {
+        prompt: "Where do you find your happiness?"
+      },
+      further: [
+        {
+          text: "TEDx: “Obliquity” by John Kay",
+          url: "https://www.youtube.com/watch?v=_BoAtYL3OWU"
+        }
+      ],
+    },
+    {
+      id: 12,
+      quote: {
+        text: "The clearer I perceive that which is True, the less reasoning, judging, arguing I can do.",
+        author: {
+          name: "Angelus Silesius",
+          bioURL: "http://en.wikipedia.org/wiki/Angelus_Silesius"
+        }
+      },
+      art: {
+        sourceURL: "silesius.jpg",
+        description: "Drawing depicting a bust of Angelus Silesius."
+      },
+      explore: {
+        prompt: "Today, listen for any internal judging or arguing. What hard-to-accept reality is at play?"
+      }
+    },
   ]
 
   return {
@@ -357,8 +431,7 @@ function App(state, store) {
 }
 
 // initialize dependencies
-const aDay = 60 * 24
-state = State(aDay)
+state = State(10)
 store = InMemoryMozStore()
 
 widget = await App(state, store).buildMozWidget()
