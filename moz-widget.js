@@ -316,6 +316,9 @@ function InMemoryMozStore() {
   return {
     // get returns the full MoZ object identified by `id`
     get: function(id) {
+      if (data[id] == null) {
+        return null
+      }
       return deepCopy(data[id])
     },
     // nextId returns the id of the MoZ that follows `id` 
@@ -375,12 +378,16 @@ function App(state, store) {
     return new Size(imgSize.width * zoom, imgSize.height * zoom)
   }
 
+  function urlForMoz(mozId) {
+    return URLScheme.forRunningScript() + "?mozId=" + mozId
+  }
+
   // https://developer.apple.com/design/human-interface-guidelines/ios/system-capabilities/widgets/#adapting-to-different-screen-sizes
   const SMALL_WIDGET_SIZE = new Size(169,169)
 
   async function buildSmallWidget(moz) {
     widget = new ListWidget()
-    widget.url = URLScheme.forRunningScript()
+    widget.url = urlForMoz(moz.id)
 
     art = await imageFor(moz.art.sourceURL)
 
@@ -392,7 +399,7 @@ function App(state, store) {
 
   async function buildMediumWidget(moz) {
     widget = new ListWidget()
-    widget.url = URLScheme.forRunningScript()
+    widget.url = urlForMoz(moz.id)
 
     widget.addSpacer()
     addQuoteRow(widget, moz)
@@ -445,11 +452,24 @@ function App(state, store) {
     return widget
   }
 
-  async function buildMozWidget(widgetFamily) {
-    mozId = state.get().latestMozId
-    state.setNextId(store.nextId(mozId))
+  // buildMozWidget produces the appropriately sized MoZ widget.
+  //   widgetFamily = (string) one of "small", "medium", "large"
+  //   mozId = (int) the id of the MoZ to display.
+  //     if `null` displays the next MoZ in the store.
+  async function buildMozWidget(widgetFamily, mozId) {
+    if (mozId) {
+      // (attempt to) fetch the exact MoZ requested
+      moz = store.get(mozId)
+      if (moz == null) {
+        // not present, fallback to latest
+        moz = store.get(state.get().latestMozId)
+      }
+    } else {
+      // fetch the "next" MoZ
+      state.setNextId(store.nextId(state.get().latestMozId))
+      moz = store.get(state.get().latestMozId)
+    }
 
-    moz = store.get(mozId)
     widget = await buildWidget(widgetFamily, moz)
     widget.backgroundGradient = NewLinearGradient([LIGHT_PURPLE, PEACH], [DARK_PURPLE, PURPLE])
 
@@ -468,12 +488,17 @@ function presentWidget(widget, widgetFamily) {
     }
 }
 
-state = State(0.5)
-store = InMemoryMozStore()
+// process arguments
 widgetFamily = config.widgetFamily || "large"
+// TODO: validate (verify that parseInt() is safe OR paranoidly trim to a safe size)
+mozId = args.queryParameters["mozId"]
+stateTTL = 0  // in minutes
 
-widget = await App(state, store).buildMozWidget(widgetFamily)
+// construct dependencies
+state = State(stateTTL)
+store = InMemoryMozStore()
 
+widget = await App(state, store).buildMozWidget(widgetFamily, mozId)
 Script.setWidget(widget)
 presentWidget(widget, widgetFamily)
 
