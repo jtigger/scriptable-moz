@@ -340,61 +340,77 @@ function App(state, store) {
     return "— " + name
   }
 
-  async function buildSmallWidget(moz) {
-    widget = new ListWidget()
-    content = widget.addStack()
-    artImage = content.addImage(await imageFor(moz.art.sourceURL))
-
-    content.centerAlignContent()
-
-    return widget
-  }
-
-  async function buildMediumWidget(moz) {
-    widget = new ListWidget()
-
-    widget.addSpacer()
-
-    quoteRow = widget.addStack()
-    quoteRow.addSpacer()
-    quoteText = quoteRow.addText(asQuote(moz.quote.text))
-    quoteRow.addSpacer()
-    quoteText.centerAlignText()
-    quoteText.font = new Font("Noteworthy", 16)
-
-    widget.addSpacer()
-
-    authorRow = widget.addStack()
-    authorLeftPad = authorRow.addSpacer()
-    authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-    authorText.font = new Font("Zapfino", 10)
-
-    return widget
-  }
-
-  async function buildLargeWidget(moz) {
-    widget = new ListWidget()
-
+  async function addArtRow(widget, moz) {
     artRow = widget.addStack()
     artRow.addSpacer()
     artImage = artRow.addImage(await imageFor(moz.art.sourceURL))
+    artImage.cornerRadius = 12
     artRow.addSpacer()
+  }
 
-    widget.addSpacer(8)
-
+  function addQuoteRow(widget, moz) {
     quoteRow = widget.addStack()
     quoteRow.addSpacer()
     quoteText = quoteRow.addText(asQuote(moz.quote.text))
     quoteRow.addSpacer()
     quoteText.centerAlignText()
     quoteText.font = new Font("Noteworthy", 18)
+  }
 
-    widget.addSpacer(4)
-
+  function addAuthorRow(widget, moz) {
     authorRow = widget.addStack()
     authorRow.addSpacer()
     authorText = authorRow.addText(attributeTo(moz.quote.author.name))
     authorText.font = new Font("Zapfino", 10)
+  }
+
+  // imgSize = 100 x 200
+  // imgSize = 400 x 800
+  // containerSize = 169 x 169
+  function zoomToFill(imgSize, containerSize) {
+    heightRatio = containerSize.height / imgSize.height 
+    widthRatio = containerSize.width / imgSize.width 
+    zoom = heightRatio > widthRatio ? heightRatio : widthRatio
+
+    return new Size(imgSize.width * zoom, imgSize.height * zoom)
+  }
+
+  // https://developer.apple.com/design/human-interface-guidelines/ios/system-capabilities/widgets/#adapting-to-different-screen-sizes
+  const SMALL_WIDGET_SIZE = new Size(169,169)
+
+  async function buildSmallWidget(moz) {
+    widget = new ListWidget()
+    widget.url = URLScheme.forRunningScript()
+
+    art = await imageFor(moz.art.sourceURL)
+
+    artImage = widget.addImage(art)
+    artImage.imageSize = zoomToFill(art.size, SMALL_WIDGET_SIZE)
+
+    return widget
+  }
+
+  async function buildMediumWidget(moz) {
+    widget = new ListWidget()
+    widget.url = URLScheme.forRunningScript()
+
+    widget.addSpacer()
+    addQuoteRow(widget, moz)
+    widget.addSpacer()
+    addAuthorRow(widget, moz)
+
+    return widget
+  }
+
+
+  async function buildLargeWidget(moz) {
+    widget = new ListWidget()
+
+    addArtRow(widget, moz)
+    widget.addSpacer(8)
+    addQuoteRow(widget, moz)
+    widget.addSpacer(4)
+    addAuthorRow(widget, moz)
 
     return widget
   }
@@ -418,23 +434,23 @@ function App(state, store) {
   }
 
   // buildWidget constructs the layout appropriate for the current widget family
-  async function buildWidget(moz) {
-    if (config.widgetFamily === "large" || config.widgetFamily == null) {
+  async function buildWidget(widgetFamily, moz) {
+    if (widgetFamily === "large") {
       widget = await buildLargeWidget(moz)
-    } else if (config.widgetFamily === "medium") {
+    } else if (widgetFamily === "medium") {
       widget = await buildMediumWidget(moz)
-    } else if (config.widgetFamily === "small") {
+    } else if (widgetFamily === "small") {
       widget = await buildSmallWidget(moz)
     }
     return widget
   }
 
-  async function buildMozWidget() {
+  async function buildMozWidget(widgetFamily) {
     mozId = state.get().latestMozId
     state.setNextId(store.nextId(mozId))
 
     moz = store.get(mozId)
-    widget = await buildWidget(moz)
+    widget = await buildWidget(widgetFamily, moz)
     widget.backgroundGradient = NewLinearGradient([LIGHT_PURPLE, PEACH], [DARK_PURPLE, PURPLE])
 
     return widget
@@ -442,12 +458,23 @@ function App(state, store) {
   return { buildMozWidget: buildMozWidget }
 }
 
-state = State(10)
-store = InMemoryMozStore()
+function presentWidget(widget, widgetFamily) {
+    if (widgetFamily === "large") {
+      widget.presentLarge()
+    } else if (widgetFamily === "medium") {
+      widget.presentMedium()
+    } else if (widgetFamily === "small") {
+      widget.presentSmall()
+    }
+}
 
-widget = await App(state, store).buildMozWidget()
+state = State(0.5)
+store = InMemoryMozStore()
+widgetFamily = config.widgetFamily || "large"
+
+widget = await App(state, store).buildMozWidget(widgetFamily)
 
 Script.setWidget(widget)
-widget.presentLarge()
+presentWidget(widget, widgetFamily)
 
 Script.complete()
