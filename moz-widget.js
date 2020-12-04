@@ -3,7 +3,6 @@
 // icon-color: purple; icon-glyph: magic;
 //
 
-
 // deepCopy clones `obj` (via JSON serialization/deserialization)
 function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj))
@@ -19,8 +18,7 @@ async function imageFor(url) {
 }
 
 // State contains persisted state of the MoZ app.
-//   stateTTL (optional) = the minimum amount of time (in minutes) since 
-//     latest refresh before considering state as "stale".
+//   stateTTL (optional) = the minimum amount of time (in minutes) since latest refresh before considering state as "stale".
 function State(stateTTL) {
   let _state
   stateTTL = ((stateTTL === undefined) ? 0.5 : stateTTL) * 60 * 1000  // convert to milliseconds 
@@ -104,7 +102,7 @@ function InMemoryMozStore() {
     {
       id: 1,
       quote: {
-        text: "Knowledge is learning something new every day. Wisdom is letting go of something every day.",
+        text: "Knowledge is learning something new every day.\nWisdom is letting go of something every day.",
         author: {
           name: "Zen Proverb",
           bioURL: "http://en.wikipedia.org/wiki/Jim_Butcher"
@@ -316,6 +314,9 @@ function InMemoryMozStore() {
   return {
     // get returns the full MoZ object identified by `id`
     get: function(id) {
+      if (data[id] == null) {
+        return null
+      }
       return deepCopy(data[id])
     },
     // nextId returns the id of the MoZ that follows `id` 
@@ -326,7 +327,7 @@ function InMemoryMozStore() {
   }
 }
 
-function App(state, store) {
+function App(state, store, appConfig) {
   const PEACH = new Color("#f09f9c")
   const LIGHT_PURPLE = new Color("#c76b98")
   const PURPLE = new Color("#632b6c")
@@ -340,61 +341,75 @@ function App(state, store) {
     return "— " + name
   }
 
-  async function buildSmallWidget(moz) {
-    widget = new ListWidget()
-    content = widget.addStack()
-    artImage = content.addImage(await imageFor(moz.art.sourceURL))
-
-    content.centerAlignContent()
-
-    return widget
+  function urlForMoz(mozId) {
+    return URLScheme.forRunningScript() + "?" + appConfig.queryParamNames.mozId + "=" + mozId
   }
 
-  async function buildMediumWidget(moz) {
-    widget = new ListWidget()
-
-    widget.addSpacer()
-
-    quoteRow = widget.addStack()
-    quoteRow.addSpacer()
-    quoteText = quoteRow.addText(asQuote(moz.quote.text))
-    quoteRow.addSpacer()
-    quoteText.centerAlignText()
-    quoteText.font = new Font("Noteworthy", 16)
-
-    widget.addSpacer()
-
-    authorRow = widget.addStack()
-    authorLeftPad = authorRow.addSpacer()
-    authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-    authorText.font = new Font("Zapfino", 10)
-
-    return widget
-  }
-
-  async function buildLargeWidget(moz) {
-    widget = new ListWidget()
-
+  async function addArtRow(widget, moz) {
     artRow = widget.addStack()
     artRow.addSpacer()
     artImage = artRow.addImage(await imageFor(moz.art.sourceURL))
+    artImage.cornerRadius = 12
     artRow.addSpacer()
+  }
 
-    widget.addSpacer(8)
-
+  function addQuoteRow(widget, moz) {
     quoteRow = widget.addStack()
     quoteRow.addSpacer()
     quoteText = quoteRow.addText(asQuote(moz.quote.text))
     quoteRow.addSpacer()
     quoteText.centerAlignText()
-    quoteText.font = new Font("Noteworthy", 18)
+    quoteText.minimumScaleFactor = widget.apropos(1, 14/20, 16/24)
+    quoteText.font = new Font("Noteworthy", widget.apropos(0, 20, 24))
+  }
 
-    widget.addSpacer(4)
-
+  function addAuthorRow(widget, moz) {
     authorRow = widget.addStack()
     authorRow.addSpacer()
     authorText = authorRow.addText(attributeTo(moz.quote.author.name))
-    authorText.font = new Font("Zapfino", 10)
+    authorText.font = new Font("Zapfino", widget.apropos(0, 10, 14))
+  }
+
+  function zoomToFill(imgSize, containerSize) {
+    heightRatio = containerSize.height / imgSize.height 
+    widthRatio = containerSize.width / imgSize.width 
+    zoom = heightRatio > widthRatio ? heightRatio : widthRatio
+
+    return new Size(imgSize.width * zoom, imgSize.height * zoom)
+  }
+
+  // https://developer.apple.com/design/human-interface-guidelines/ios/system-capabilities/widgets/#adapting-to-different-screen-sizes
+  const SMALL_WIDGET_SIZE = new Size(169,169)
+
+  async function buildSmallWidget(widget, moz) {
+    widget.url = urlForMoz(moz.id)
+
+    art = await imageFor(moz.art.sourceURL)
+
+    artImage = widget.addImage(art)
+    artImage.imageSize = zoomToFill(art.size, SMALL_WIDGET_SIZE)
+
+    return widget
+  }
+
+  async function buildMediumWidget(widget, moz) {
+    widget.url = urlForMoz(moz.id)
+
+    widget.addSpacer()
+    addQuoteRow(widget, moz)
+    widget.addSpacer()
+    addAuthorRow(widget, moz)
+
+    return widget
+  }
+
+
+  async function buildLargeWidget(widget, moz) {
+    addArtRow(widget, moz)
+    widget.addSpacer(8)
+    addQuoteRow(widget, moz)
+    widget.addSpacer(4)
+    addAuthorRow(widget, moz)
 
     return widget
   }
@@ -417,37 +432,89 @@ function App(state, store) {
     return grad
   }
 
-  // buildWidget constructs the layout appropriate for the current widget family
-  async function buildWidget(moz) {
-    if (config.widgetFamily === "large" || config.widgetFamily == null) {
-      widget = await buildLargeWidget(moz)
-    } else if (config.widgetFamily === "medium") {
-      widget = await buildMediumWidget(moz)
-    } else if (config.widgetFamily === "small") {
-      widget = await buildSmallWidget(moz)
+  // NewWidget instantiates an enhanced ListWidget, building the layout appropriate for the current widget family.
+  //   Instances include the following functions:
+  //   - apropos(small,medium,large) = given three values, returns the one appropriate for this widget's family.
+  //   - present() = calls the appropriate presentXXX() function appropriate for this widget's family.
+  async function NewWidget(widgetFamily, moz) {
+    let widget = new ListWidget()
+    widget.apropos = function (small, medium, large) {
+      if (widgetFamily == "small") {
+        return small
+      }
+      if (widgetFamily == "medium") {
+        return medium
+      }
+      if (widgetFamily == "large") {
+        return large
+      }
     }
+    widget.present = function() {
+      if (widgetFamily == "small") {
+        widget.presentSmall()
+      }
+      if (widgetFamily == "medium") {
+        widget.presentMedium()
+      }
+      if (widgetFamily == "large") {
+        widget.presentLarge()
+      }
+    }
+    let builder = widget.apropos(buildSmallWidget, buildMediumWidget, buildLargeWidget)
+    await builder(widget, moz)
     return widget
   }
 
-  async function buildMozWidget() {
-    mozId = state.get().latestMozId
-    state.setNextId(store.nextId(mozId))
+  // buildMozWidget produces the appropriately sized MoZ widget.
+  //   widgetFamily = (string) one of "small", "medium", "large"
+  //   mozId = (int) the id of the MoZ to display.
+  //     if `null` displays the next MoZ in the store.
+  async function buildMozWidget(widgetFamily, mozId) {
+    if (mozId) {
+      // (attempt to) fetch the exact MoZ requested
+      moz = store.get(mozId)
+      if (moz == null) {
+        // not present, fallback to latest
+        moz = store.get(state.get().latestMozId)
+      }
+    } else {
+      // fetch the "next" MoZ
+      state.setNextId(store.nextId(state.get().latestMozId))
+      moz = store.get(state.get().latestMozId)
+    }
 
-    moz = store.get(mozId)
-    widget = await buildWidget(moz)
+    widget = await NewWidget(widgetFamily, moz)
     widget.backgroundGradient = NewLinearGradient([LIGHT_PURPLE, PEACH], [DARK_PURPLE, PURPLE])
 
     return widget
   }
+
   return { buildMozWidget: buildMozWidget }
 }
 
-state = State(10)
+// process arguments
+widgetFamily = config.widgetFamily || "large"
+const QUERY_PARAM_MOZ_ID = "mozId"
+// TODO: validate (verify that parseInt() is safe OR paranoidly trim to a safe size)
+mozId = args.queryParameters[QUERY_PARAM_MOZ_ID]
+stateTTL = 1  // in minutes
+
+// construct dependencies
+state = State(stateTTL)
 store = InMemoryMozStore()
+appConfig = {
+  queryParamNames: {
+    mozId: QUERY_PARAM_MOZ_ID
+  }
+}
 
-widget = await App(state, store).buildMozWidget()
-
-Script.setWidget(widget)
-widget.presentLarge()
+widget = await App(state, store, appConfig).buildMozWidget(widgetFamily, mozId)
+if (config.runsInWidget) {
+  Script.setWidget(widget)
+} else if (config.runsInApp) {
+  widget.present()
+} else {
+  throw new Error("Unsupported config: " + JSON.stringify(config))
+}
 
 Script.complete()
