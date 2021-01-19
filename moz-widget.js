@@ -309,6 +309,40 @@ function InMemoryMozStore() {
         prompt: "Today, listen for any internal judging or arguing. What hard-to-accept reality is at play?"
       }
     },
+    {
+      id: 13,
+      quote: {
+        text: "Wisdom is understanding that you do not have to hold your happiness for ransom, the quality of the journey has to be more important than the destination.",
+        author: {
+          name: "Sam Harris",
+          bioURL: "https://en.wikipedia.org/wiki/Sam_Harris"
+        }
+      },
+      art: {
+        sourceURL: "sam-harris-headshot-black-and-white.jpg",
+        description: "Black and white headshot of Sam Harris."
+      },
+      explore: {
+        prompt: "When *should* you be happy? When your to-do list is empty? When all your problems are solved? When your desires are gratified? When all the news is good?"
+      }
+    },
+    {
+      id: 14,
+      quote: {
+        text: "It's the ability to experience things prior to concepts ... these are problems that cannot be solved by more thinking.",
+        author: {
+          name: "Sam Harris",
+          bioURL: "https://en.wikipedia.org/wiki/Sam_Harris"
+        }
+      },
+      art: {
+        sourceURL: "poison-arrow.png",
+        description: "A figure in the foreground struck by a poison error with a figure in the background sweeping cherry blossoms."
+      },
+      explore: {
+        prompt: "Try to experience the sensation directly, rather than the idea of the sensation."
+      }
+    },
   ]
 
   return {
